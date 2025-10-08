@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Chat Grupal</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f2f2f2; }
+    #mensajes { max-height: 400px; overflow-y: auto; background: #fff; padding: 10px; border-radius: 10px; }
+    .mensaje { margin-bottom: 10px; }
+    .usuario { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>💬 Chat en tiempo real</h1>
+  <div id="mensajes"></div>
+  <form id="formulario">
+    <input type="text" id="mensaje" placeholder="Escribe tu mensaje..." autocomplete="off" required>
+    <button type="submit">Enviar</button>
+  </form>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    // Obtener nombre de usuario desde URL
+    const params = new URLSearchParams(window.location.search);
+    const usuario = params.get('usuario') || 'Anónimo';
+
+    // Conectar con el servidor
+    const socket = io("http://localhost:3000");
+    const mensajesDiv = document.getElementById('mensajes');
+    const formulario = document.getElementById('formulario');
+    const inputMensaje = document.getElementById('mensaje');
+
+    // Cargar historial desde el servidor (Firebase)
+async function cargarHistorial() {
+  try {
+    const res = await fetch('/obtener-mensajes');
+    const mensajes = await res.json();
+
+    mensajes.forEach(data => {
+      const div = document.createElement('div');
+      div.classList.add('mensaje');
+      div.innerHTML = `<span class="usuario">${data.usuario}</span>: ${data.mensaje} <small>(${data.timestamp})</small>`;
+      mensajesDiv.appendChild(div);
+    });
+
+    // Hacer scroll al final
+    mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
+  } catch (error) {
+    console.error('Error al cargar historial:', error);
+  }
+}
+
+// Llamar la función al abrir la página
+cargarHistorial();
+
+
+    // Escuchar nuevos mensajes desde el servidor
+    socket.on('nuevo-mensaje', (data) => {
+      const div = document.createElement('div');
+      div.classList.add('mensaje');
+      div.innerHTML = `<span class="usuario">${data.usuario}</span>: ${data.mensaje} <small>(${data.timestamp})</small>`;
+      mensajesDiv.appendChild(div);
+      mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
+    });
+
+    // Enviar mensaje al servidor
+    formulario.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const mensaje = inputMensaje.value.trim();
+      if (mensaje) {
+        socket.emit('enviar-mensaje', { usuario, mensaje });
+        inputMensaje.value = '';
+      }
+    });
+  </script>
+</body>
+</html>
