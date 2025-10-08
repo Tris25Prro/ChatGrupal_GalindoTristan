@@ -101,3 +101,4 @@ server.listen(PORT, () => {
 });
 
 //para iniciar con el servidor es: node server/index.js en la terminal
+//use un .gitignore para evitar subir archivos de firebase, los package.json y node_modules
